@@ -1,22 +1,38 @@
 pipeline {
     agent any
 
+    tools {
+        jdk 'jdk21'
+        maven 'maven3'
+    }
+
+    environment {
+        JAVA_HOME = tool(name: 'jdk21', type: 'hudson.model.JDK')
+        PATH = "${JAVA_HOME}/bin:${env.PATH}"
+    }
+
     stages {
 
         stage('Check Java Versions') {
             steps {
-                sh 'echo JAVA_HOME=$JAVA_HOME'
-                sh 'which java'
-                sh 'which javac'
-                sh 'java -version'
-                sh 'javac -version'
-                sh 'mvn -version'
+                sh '''
+                    echo "JAVA_HOME=$JAVA_HOME"
+                    which java
+                    which javac
+                    java -version
+                    javac -version
+                    mvn -version
+                '''
             }
         }
 
         stage('Build JAR') {
             steps {
-                sh 'mvn clean package -DskipTests'
+                sh '''
+                    export JAVA_HOME=$JAVA_HOME
+                    export PATH=$JAVA_HOME/bin:$PATH
+                    mvn clean package -DskipTests
+                '''
             }
         }
 
@@ -75,6 +91,9 @@ EOF
         stage('Run Container') {
             steps {
                 sh '''
+                    docker stop fullstack-container || true
+                    docker rm fullstack-container || true
+
                     docker run -d \
                       --name fullstack-container \
                       -p 9090:9090 \
@@ -82,6 +101,15 @@ EOF
                       fullstack-backend
                 '''
             }
+        }
+    }
+
+    post {
+        success {
+            echo 'Pipeline completed successfully!'
+        }
+        failure {
+            echo 'Pipeline failed. Check the console output.'
         }
     }
 }
