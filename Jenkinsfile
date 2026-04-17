@@ -3,6 +3,17 @@ pipeline {
 
     stages {
 
+        stage('Check Java Versions') {
+            steps {
+                sh 'echo JAVA_HOME=$JAVA_HOME'
+                sh 'which java'
+                sh 'which javac'
+                sh 'java -version'
+                sh 'javac -version'
+                sh 'mvn -version'
+            }
+        }
+
         stage('Build JAR') {
             steps {
                 sh 'mvn clean package -DskipTests'
